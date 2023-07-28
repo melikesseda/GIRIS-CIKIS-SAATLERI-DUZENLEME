@@ -1,0 +1,35 @@
+CREATE VIEW ...... AS
+SELECT 
+// pa = birleştirilen tablonun kısaltması
+    pa.Sicil_no,
+    pa.Adi_Soyadi,
+    TARIH,
+    CASE WHEN (YON = 1 AND LEAD_YON = 1) THEN NULL ELSE GIRIS_SAATI END AS GIRIS_SAATI,
+    CASE WHEN (YON = 0 AND LEAD_YON = 0) THEN NULL ELSE LEAD_SAAT END AS CIKIS_SAATI,
+    NEDENKODU,
+    NEDEN
+FROM (
+    SELECT 
+       secilen_sütun_isimleri,
+        SAAT AS GIRIS_SAATI,
+// 0-1 değerleriyle giriş çıkışın belirlenmesinde yardımcı olan yon sütunu
+        YON,
+
+
+        LEAD(SAAT) OVER (PARTITION BY SICILNO, TARIH ORDER BY SAAT) AS LEAD_SAAT,
+        LEAD(YON) OVER (PARTITION BY SICILNO, TARIH ORDER BY SAAT) AS LEAD_YON,
+     
+    FROM (
+        SELECT 
+            
+secilen_sütun_isimleri,
+//zaman değerinde gün ve saat birlikte ise ayırma işlemi
+            CONVERT(DATE, ZAMAN) AS TARIH,
+            CONVERT(TIME, ZAMAN) AS SAAT,
+            
+        FROM uzerinde_calisilan_ana_tablo
+        
+    ) AS T
+) AS U
+INNER JOIN birlestirilmek_istenen_tablo_adı pa ON U.SICILNO = pa.Sicil_no
+WHERE YON = 0 OR LEAD_YON = 1;
